@@ -21,38 +21,49 @@ import java.util.regex.PatternSyntaxException;
  * By anthony.kryloff@gmail.com
  * Date: 22.05.16 14:27
  */
+
+/**
+ * Auxiliary class for parsing console arguments using args4j
+ */
 public class TaskOptions {
     Path input;
     Path output;
 
-    @Option(name = "--input", usage = "input dir", required = true)
+    @Option(name = "--input", usage = "input dir", required = true, aliases = {"-in"})
     public void setInput(Path path) throws CmdLineException {
         input = path.toAbsolutePath().normalize();
         if(!Files.exists(input))
             throw new CmdLineException("Input directory doesn't exist: " + input);
     }
 
-    @Option(name = "--output", usage = "output directory", required = true)
+    @Option(name = "--output", usage = "output directory", required = true, aliases = {"-out"})
     public void setOutput(Path path) {
         output = path.toAbsolutePath().normalize();
     }
 
-    @Option(name = "--mask", usage = "mask for files to be copied", required = true, handler = MaskOptionHandler.class)
+    @Option(name = "--mask", usage = "mask for files to be copied", required = true,
+            aliases = {"-m"}, handler = MaskOptionHandler.class)
     String mask;
 
-    @Option(name = "--waitInterval", usage = "interval between scans", required = true, handler = IntervalOptionHandler.class)
+    @Option(name = "--waitInterval", usage = "interval between scans", required = true,
+            aliases = {"-wait"}, handler = PositiveIntegerOptionHandler.class)
     int waitInterval;
 
-    @Option(name = "--includeSubfolders", usage = "include subfolders", handler = ExplicitBooleanOptionHandler.class)
+    @Option(name = "--includeSubfolders", usage = "include subfolders",
+            aliases = {"-r"}, handler = ExplicitBooleanOptionHandler.class)
     boolean recursive = false;
 
-    @Option(name = "--autoDelete", usage = "auto delete files copied", handler = ExplicitBooleanOptionHandler.class)
+    @Option(name = "--autoDelete", usage = "auto delete files copied",
+            aliases = {"-d"}, handler = ExplicitBooleanOptionHandler.class)
     boolean autoDelete = false;
 
 
-    public static class IntervalOptionHandler extends OneArgumentOptionHandler<Integer> {
+    /**
+     * Positive integer option handler
+     */
+    public static class PositiveIntegerOptionHandler extends OneArgumentOptionHandler<Integer> {
 
-        public IntervalOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super Integer> setter) {
+        public PositiveIntegerOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super Integer> setter) {
             super(parser, option, setter);
         }
 
@@ -66,6 +77,9 @@ public class TaskOptions {
         }
     }
 
+    /**
+     * Glob mask option handler, checks if mask is a valid glob
+     */
     public static class MaskOptionHandler extends OneArgumentOptionHandler<String> {
 
         public MaskOptionHandler(CmdLineParser parser, OptionDef option, Setter<? super String> setter) {

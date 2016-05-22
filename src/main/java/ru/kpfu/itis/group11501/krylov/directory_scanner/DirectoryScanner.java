@@ -62,8 +62,9 @@ public class DirectoryScanner {
             try {
                 parser.parseArgument(argv);
             } catch (CmdLineException e) {
-                System.err.println("Scanner cannot start due to following:");
+                System.err.println("Scanner cannot start due to following reasons:");
                 System.err.println(e.getLocalizedMessage());
+                System.err.println("Usage:");
                 parser.printUsage(System.err);
                 continue;
             }
@@ -85,23 +86,25 @@ public class DirectoryScanner {
         }
 
         public void run() {
-            System.out.println("starting task");
+            out.println("starting task");
             for (int i = 0; i < NUM_THREADS; i++) {
                 CopyWorker worker = new CopyWorker(taskOptions, out, i);
                 scheduler.scheduleAtFixedRate(worker, 0, taskOptions.waitInterval, TimeUnit.MILLISECONDS);
-                System.out.println("Scheduled "+worker);
             }
         }
 
+        /**
+         * Sends shutdown signal to scheduler and waits for current scan to complete
+         */
         public void stop() {
-            System.out.println("shutting down tasks");
+            out.println("shutting down tasks");
             scheduler.shutdown();
             try {
                 scheduler.awaitTermination(taskOptions.waitInterval, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("shut down tasks");
+            out.println("shut down tasks");
         }
 
     }

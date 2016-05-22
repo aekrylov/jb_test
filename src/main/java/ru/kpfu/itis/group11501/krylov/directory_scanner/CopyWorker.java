@@ -14,6 +14,12 @@ import java.util.EnumSet;
  * By anthony.kryloff@gmail.com
  * Date: 20.05.16 14:46
  */
+
+/**
+ * Worker class.
+ * All worker instances scan the filesystem simultaneously and copy files matching pattern.
+ * FIles are distributed between workers using filename hash code
+ */
 public class CopyWorker implements Runnable {
     private String mask;
     private boolean recursive;
@@ -25,18 +31,6 @@ public class CopyWorker implements Runnable {
     private PrintStream logStream;
 
     private int num;
-
-    public CopyWorker(Path root, Path outRoot, String mask, boolean recursive, boolean autoDelete, PrintStream logStream, int num) {
-        this.mask = mask;
-        this.recursive = recursive;
-        this.autoDelete = autoDelete;
-        this.root = root;
-        this.outRoot = outRoot;
-        this.logStream = logStream;
-
-        this.num = num;
-    }
-
 
     public CopyWorker(TaskOptions options, PrintStream logStream, int i) {
         this.root = options.input;
@@ -50,27 +44,7 @@ public class CopyWorker implements Runnable {
 
     @Override
     public void run() {
-        logStream.println();
         int depth = recursive ? Integer.MAX_VALUE : 1;
-
-/*
-        if(!recursive) {
-            File dir = new File(root.toUri());
-            File [] copy = dir.listFiles(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return name.matches(mask);
-                }
-            });
-            for (int i = num; i < copy.length; i+= DirectoryScanner.NUM_THREADS) {
-                if(copy[i].isDirectory())
-                    continue;
-
-                Path dest = outRoot.resolve(copy[i].getName());
-
-            }
-        }
-*/
 
         try {
             Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), depth, new Visitor(root, outRoot));
@@ -133,15 +107,10 @@ public class CopyWorker implements Runnable {
             Path dest = outRoot.resolve(root.relativize(path));
 
             //moving is faster than copying and deleting
-            //TODO rewrite files?
-            try {
-                if(autoDelete) {
-                    Files.move(path, dest, StandardCopyOption.REPLACE_EXISTING);
-                } else {
-                    Files.copy(path, dest, StandardCopyOption.REPLACE_EXISTING);
-                }
-            } catch (FileAlreadyExistsException e) {
-                logStream.println("File already exists: "+e.getFile());
+            if(autoDelete) {
+                Files.move(path, dest, StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                Files.copy(path, dest, StandardCopyOption.REPLACE_EXISTING);
             }
 
 
